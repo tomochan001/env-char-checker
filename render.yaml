@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: env-char-checker
+    runtime: python
+    buildCommand: ""
+    startCommand: "python env_char_checker_webapp.py"
+    envVars:
+      - key: FLASK_ENV
+        value: production
