@@ -26,7 +26,25 @@ HTML_TEMPLATE = """
 
 def is_env_dependent(char):
     code = ord(char)
-    return 0xD800 <= code <= 0xDFFF or code > 0xFFFF
+    
+    # サロゲート領域 or BMP外
+    if 0xD800 <= code <= 0xDFFF or code > 0xFFFF:
+        return True
+
+    # 機種依存・外字・異体字の代表（丸数字 + 記号 + 異体字）
+    env_chars = [
+        # 丸数字など
+        '①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
+        '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳',
+        # 単位や記号
+        '㍉','㌔','㌢','㍍','㌘','㌧','㏄','㍑','㍗',
+        '㌍','㌦','㌣','㌫','㍊','㌻','㎜','㎝','㎞','㎎','㎏',
+        '㏍','㏜','℡','№','㊤','㊥','㊦','㊧','㊨',
+        # 異体字・外字・JIS外漢字
+        '髙','﨑','𠮷','彅','圓','國','體','神','辻','薗','靖'
+    ]
+
+    return char in env_chars
 
 @app.route("/", methods=["GET", "POST"])
 def index():
