@@ -10,6 +10,22 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="utf-8">
     <title>環境依存文字チェッカー（Web版）</title>
+    <style>
+        body {
+            text-align: center;
+            font-size: 18px;
+            font-family: sans-serif;
+        }
+        textarea {
+            font-size: 16px;
+        }
+        pre {
+            text-align: left;
+            display: inline-block;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
     <h1>環境依存文字チェッカー</h1>
@@ -19,7 +35,7 @@ HTML_TEMPLATE = """
     </form>
     {% if result %}
     <h2>結果:</h2>
-    <pre>{{ result }}</pre>
+    <pre>{{ result|safe }}</pre>
     {% endif %}
 </body>
 </html>
@@ -34,15 +50,27 @@ def is_env_dependent(char):
         return False
     return char not in SAFE_CHAR_SET
 
+def find_problematic_lines(text):
+    lines = text.splitlines()
+    result_lines = []
+    for lineno, line in enumerate(lines, 1):
+        for char in line:
+            if is_env_dependent(char):
+                result_lines.append((lineno, char, f"U+{ord(char):04X}"))
+    return result_lines
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     input_text = ""
     result = ""
     if request.method == "POST":
         input_text = request.form["input_text"]
-        problematic = [(c, f"U+{ord(c):04X}") for c in input_text if is_env_dependent(c)]
+        problematic = find_problematic_lines(input_text)
         if problematic:
-            result = "環境依存文字が見つかりました：\n\n" + "\n".join(f"{c} ({code})" for c, code in problematic)
+            result = "環境依存文字が見つかりました：<br><br>" + "<br>".join(
+                f"<span style='color: red; font-weight: bold;'>{lineno}行目:</span> "
+                f"<span style='color: navy;'>{c} ({code})</span>"
+                for lineno, c, code in problematic)
         else:
             result = "環境依存文字は見つかりませんでした。"
     return render_template_string(HTML_TEMPLATE, input_text=input_text, result=result)
