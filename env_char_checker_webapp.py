@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template_string
 import os
+import unicodedata
 
 app = Flask(__name__)
 
@@ -26,25 +27,19 @@ HTML_TEMPLATE = """
 
 def is_env_dependent(char):
     code = ord(char)
-    
-    # サロゲート領域 or BMP外
-    if 0xD800 <= code <= 0xDFFF or code > 0xFFFF:
-        return True
 
-    # 機種依存・外字・異体字の代表（丸数字 + 記号 + 異体字）
-    env_chars = [
-        # 丸数字など
-        '①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
-        '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳',
-        # 単位や記号
-        '㍉','㌔','㌢','㍍','㌘','㌧','㏄','㍑','㍗',
-        '㌍','㌦','㌣','㌫','㍊','㌻','㎜','㎝','㎞','㎎','㎏',
-        '㏍','㏜','℡','№','㊤','㊥','㊦','㊧','㊨',
-        # 異体字・外字・JIS外漢字
-        '髙','﨑','𠮷','彅','圓','國','體','神','辻','薗','靖'
-    ]
+    # 許可：ASCII記号、カタカナ、ひらがな、基本漢字範囲（JIS第1・第2水準相当）
+    if (
+        0x0020 <= code <= 0x007E or   # ASCII
+        0x3040 <= code <= 0x309F or   # ひらがな
+        0x30A0 <= code <= 0x30FF or   # カタカナ
+        0x4E00 <= code <= 0x9FFF or   # CJK統合漢字（漢字の主な範囲）
+        0xFF01 <= code <= 0xFF60      # 全角記号など
+    ):
+        return False
 
-    return char in env_chars
+    # それ以外は機種依存（メルマガ非推奨）
+    return True
 
 @app.route("/", methods=["GET", "POST"])
 def index():
