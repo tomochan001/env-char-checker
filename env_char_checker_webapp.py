@@ -25,21 +25,14 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# 許可文字リストの読み込み（テキストファイルを用意しておく）
+with open("jis_safe_char_list.txt", encoding="utf-8") as f:
+    SAFE_CHAR_SET = set(f.read())
+
 def is_env_dependent(char):
-    code = ord(char)
-
-    # 許可：ASCII記号、カタカナ、ひらがな、基本漢字範囲（JIS第1・第2水準相当）
-    if (
-        0x0020 <= code <= 0x007E or   # ASCII
-        0x3040 <= code <= 0x309F or   # ひらがな
-        0x30A0 <= code <= 0x30FF or   # カタカナ
-        0x4E00 <= code <= 0x9FFF or   # CJK統合漢字（漢字の主な範囲）
-        0xFF01 <= code <= 0xFF60      # 全角記号など
-    ):
+    if char in ('\n', '\r', '\t', ' '):
         return False
-
-    # それ以外は機種依存（メルマガ非推奨）
-    return True
+    return char not in SAFE_CHAR_SET
 
 @app.route("/", methods=["GET", "POST"])
 def index():
